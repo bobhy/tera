@@ -42,6 +42,7 @@ rand = {version = "0.8", optional = true}
 serde_derive = "1.0"
 pretty_assertions = "1"
 tempfile = "3"
+rstest = { version = "0.18.2", default-features = false }
 
 [features]
 default = ["builtins"]

@@ -726,6 +726,8 @@ impl Tera {
         self.register_filter("as_str", common::as_str);
 
         self.register_filter("get", object::get);
+
+        self.register_filter("dbg_print", common::dbg_print);
     }
 
     fn register_tera_testers(&mut self) {
@@ -752,6 +754,7 @@ impl Tera {
         #[cfg(feature = "builtins")]
         self.register_function("get_random", functions::get_random);
         self.register_function("get_env", functions::get_env);
+        self.register_function("dbg_print", functions::dbg_print);
     }
 
     /// Select which suffix(es) to automatically do HTML escaping on.

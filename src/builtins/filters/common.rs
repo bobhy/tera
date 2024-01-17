@@ -18,6 +18,34 @@ use serde_json::{to_string, to_string_pretty};
 
 use crate::context::ValueRender;
 
+pub fn dbg_print_value(value: &Value) -> String {
+    match value {
+        Value::String(s) => s.to_string(),
+        Value::Number(n) => n.to_string(),
+        Value::Bool(b) => b.to_string(),
+        v => format!("{:?} ", v),
+    }
+}
+// Print its input for debugging, but also returns it for rendering
+// Also invoked as a function in expressions with
+pub fn dbg_print(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
+    const MAGIC_TAG_ARG: &str = "tag";
+    eprint!("DEBUG");
+
+    if let Some(tag) = args.get(MAGIC_TAG_ARG) {
+        eprint!(" {}", dbg_print_value(&tag));
+    };
+
+    for (k, v) in args {
+        if k != MAGIC_TAG_ARG && v != value {
+            eprint!(", {}={}", k, dbg_print_value(v));
+        }
+    }
+    eprintln!(": {:?} ", dbg_print_value(value));
+
+    Ok(value.clone())
+}
+
 // Returns the number of items in an array or an object, or the number of characters in a string.
 pub fn length(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
     match value {
@@ -242,6 +270,7 @@ mod tests {
     use super::*;
     #[cfg(feature = "builtins")]
     use chrono::{DateTime, Local};
+    use rstest::rstest;
     use serde_json;
     use serde_json::value::to_value;
     use std::collections::HashMap;
@@ -484,5 +513,23 @@ mod tests {
             result.unwrap(),
             to_value("{\n  \"key\": [\n    \"value1\",\n    2,\n    true\n  ]\n}").unwrap()
         );
+    }
+
+    #[rstest]
+    #[case(HashMap::from([("argle".to_string(), Value::from(22))]), Value::Null)] // no value, return none
+    #[case(HashMap::from([
+        ("inky dinky do".to_string(), Value::from("aaa")), 
+        ("value".to_string(), Value::from(42))]), Value::from(42))] // args include key 'value', it's value is returned
+    #[case(HashMap::from([
+            ("inky dinky do".to_string(), Value::from("aaa")), 
+            ("value".to_string(), Value::from(42)),
+            ("tag".to_string(), Value::from("identifying tag for dbg message"))
+        ]), Value::from(42))]
+
+    fn exercise_dbg_print(#[case] args: HashMap<String, Value>, #[case] _expected: Value) {
+        let pipe_input = Value::String("piped input".into());
+        let actual = dbg_print(&pipe_input, &args).unwrap();
+        eprintln!(""); // let's see debug print on line by itself in test output
+        assert_eq!(pipe_input, actual); // output should always be just the piped input
     }
 }

@@ -1,0 +1,25 @@
+{% import "macros.html" as macros %}
+{% set my_var = "argle bargle" %}
+<h1>Hello</h1>
+
+{% if my_var %}
+    {# use dbg_print as a filter, prints its input and returns it unchanged #}
+    {{ my_var | dbg_print(tag="first dbg print", other_val=22) }}
+{% else %}
+    Sorry, my_var isn't defined.
+{% endif %}
+
+{# use dbg_print(tag="something to say", value=expression) 
+   as a function also returns value arg unchanged #}
+{% if (dbg_print(tag="The value of show_all is", value=show_all)) %}
+  Showing all 
+{% else %}
+  Not showing all, per setting of `show_all`
+{% endif %}
+{{ "{{ hey }}" }}
+
+{% block content %}
+{% endblock content %}
+
+{{ macros::hello_world(greeting="世界") }}
+{{ get_random(start=0, end=10) }}

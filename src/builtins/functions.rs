@@ -6,8 +6,8 @@ use chrono::prelude::*;
 use rand::Rng;
 use serde_json::value::{from_value, to_value, Value};
 
+use crate::builtins::filters::common::dbg_print_value;
 use crate::errors::{Error, Result};
-
 /// The global function type definition
 pub trait Function: Sync + Send {
     /// The global function type definition
@@ -194,11 +194,27 @@ pub fn get_env(args: &HashMap<String, Value>) -> Result<Value> {
     }
 }
 
+/// print its arguments, but also return the value of 'value' argument, if any
+pub fn dbg_print(args: &HashMap<String, Value>) -> Result<Value> {
+    let value = args.get("value").unwrap_or(&Value::Null);
+    let tag = args.get("tag");
+
+    eprint!(
+        "DEBUG {}: {}",
+        if let Some(t) = tag { dbg_print_value(t) } else { "value".to_string() },
+        dbg_print_value(value)
+    );
+
+    Ok(value.clone())
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
 
     use serde_json::value::to_value;
+
+    use rstest::rstest;
 
     use super::*;
 
@@ -337,5 +353,22 @@ mod tests {
         let res = get_env(&args).unwrap();
         assert!(res.is_string());
         assert_eq!(res.as_str().unwrap(), "false");
+    }
+
+    #[rstest]
+    #[case(HashMap::from([("argle".to_string(), Value::from(22))]), Value::Null)] // no value, return none
+    #[case(HashMap::from([
+        ("inky dinky do".to_string(), Value::from("aaa")), 
+        ("value".to_string(), Value::from(42))]), Value::from(42))] // args include key 'value', it's value is returned
+    #[case(HashMap::from([
+            ("inky dinky do".to_string(), Value::from("aaa")), 
+            ("value".to_string(), Value::from(42)),
+            ("tag".to_string(), Value::from("identifying tag for dbg message"))
+        ]), Value::from(42))]
+
+    fn exercise_dbg_print(#[case] args: HashMap<String, Value>, #[case] expected: Value) {
+        let actual = dbg_print(&args).unwrap();
+        eprintln!(""); // let's see debug print on line by itself in test output
+        assert_eq!(expected, actual);
     }
 }
