@@ -1,5 +1,7 @@
 /// Filters operating on multiple types
 use std::collections::HashMap;
+use itertools::Itertools;
+
 #[cfg(feature = "date-locale")]
 use std::convert::TryFrom;
 use std::iter::FromIterator;
@@ -30,19 +32,21 @@ pub fn dbg_print_value(value: &Value) -> String {
 // Also invoked as a function in expressions with
 pub fn dbg_print(value: &Value, args: &HashMap<String, Value>) -> Result<Value> {
     const MAGIC_TAG_ARG: &str = "tag";
-    eprint!("DEBUG");
+    let mut line = vec!("DEBUG".to_string());
 
     if let Some(tag) = args.get(MAGIC_TAG_ARG) {
-        eprint!(" {}", dbg_print_value(&tag));
+        line.push(format!(" {}", dbg_print_value(&tag)));
     };
 
-    for (k, v) in args {
+    for (k, v) in args.iter().sorted_by_key(|x| x.0) {
         if k != MAGIC_TAG_ARG && v != value {
-            eprint!(", {}={}", k, dbg_print_value(v));
+            line.push(format!(", {}={}", k, dbg_print_value(v)));
         }
     }
-    eprintln!(": {:?} ", dbg_print_value(value));
+    line.push(format!("pipe_input: {:?} ", dbg_print_value(value)));
 
+    eprintln!("{}", line.concat());
+    
     Ok(value.clone())
 }
 

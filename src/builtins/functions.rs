@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::HashMap;
 
 #[cfg(feature = "builtins")]
@@ -196,14 +197,23 @@ pub fn get_env(args: &HashMap<String, Value>) -> Result<Value> {
 
 /// print its arguments, but also return the value of 'value' argument, if any
 pub fn dbg_print(args: &HashMap<String, Value>) -> Result<Value> {
-    let value = args.get("value").unwrap_or(&Value::Null);
-    let tag = args.get("tag");
+    const MAGIC_TAG_ARG: &str = "tag";
+    const MAGIC_VALUE_ARG: &str = "value";
 
-    eprint!(
-        "DEBUG {}: {}",
-        if let Some(t) = tag { dbg_print_value(t) } else { "value".to_string() },
-        dbg_print_value(value)
-    );
+    let value = args.get(MAGIC_VALUE_ARG).unwrap_or(&Value::Null);
+    let mut line = vec!["DEBUG".to_string()];
+
+    if let Some(tag) = args.get(MAGIC_TAG_ARG) {
+        line.push(format!(" {}", dbg_print_value(tag)));
+    };
+
+    for (k, v) in args.iter().sorted_by_key(|x| x.0) {
+        if k != MAGIC_TAG_ARG {
+            line.push(format!(", {}={}", k, dbg_print_value(v)));
+        }
+    }
+
+    eprintln!("{}", line.concat());
 
     Ok(value.clone())
 }
